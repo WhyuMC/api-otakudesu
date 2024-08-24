@@ -52,6 +52,85 @@ const Services = {
             });
         }
     },
+    getKomikTerbaru: async (req, res) => {
+    const url = `https://komikcast.cafe/komik-terbaru/page/${req.params.page}/`;
+    try {
+        const response = await services.fetchService(url, res);
+        if (response.status === 200) {
+            const $ = cheerio.load(response.data);
+            let updates = [], popularComics = [];
+            
+            // Parsing updates
+            $('.post-item-box').each((_, el) => {
+                const href = $(el).find('a').attr('href');
+                const type = $(el).find('.flag-country-type').attr('class').split(' ').pop();
+                const imgSrc = $(el).find('.post-item-thumb img').attr('src');
+                const title = $(el).find('.post-item-title h4').text().trim();
+                const chapterHref = $(el).find('.lsch a').attr('href');
+                const chapterTitle = $(el).find('.lsch a').text().trim();
+                const chapterDate = $(el).find('.datech').text().trim();
+                const colorLabel = $(el).find('.color-label-manga').text().trim();
+
+                updates.push({
+                    href,
+                    type,
+                    imgSrc,
+                    title,
+                    colorLabel,
+                    chapter: {
+                        href: chapterHref,
+                        title: chapterTitle,
+                        date: chapterDate
+                    }
+                });
+            });
+
+            // Parsing popular comics
+            $('.list-series-manga.pop li').each((_, el) => {
+                const popularHref = $(el).find('.thumbnail-series a.series').attr('href');
+                const popularImgSrc = $(el).find('.thumbnail-series img').attr('src');
+                const rank = $(el).find('.ctr').text().trim();
+                const popularTitle = $(el).find('h4 a.series').text().trim();
+                const loveViews = $(el).find('.loveviews').text().trim();
+
+                popularComics.push({
+                    href: popularHref,
+                    imgSrc: popularImgSrc,
+                    rank,
+                    title: popularTitle,
+                    loveViews
+                });
+            });
+
+            const totalPages = parseInt($('.pagination a.page-numbers').eq(-2).text().trim());
+
+            return res.status(200).json({
+                status: true,
+                message: 'success',
+                updates,
+                totalPages,
+                popularComics
+            });
+        }
+        
+        return res.status(response.status).json({
+            status: false,
+            message: 'Failed to fetch data',
+            updates: [],
+            popularComics: [],
+            totalPages: 0
+        });
+    } catch (error) {
+        console.error('An error occurred while fetching the data:', error);
+        return res.status(500).json({
+            status: false,
+            message: 'An error occurred while fetching the data',
+            updates: [],
+            popularComics: [],
+            totalPages: 0
+        });
+    }
+},
     getCompleted: async (req, res) => {
         const page = req.params.page
         let url = page === 1 ? `${baseUrl}/complete-anime/` : `${baseUrl}/complete-anime/page/${page}/`
