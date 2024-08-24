@@ -40,6 +40,5 @@ router.get("/api/v1/genres", Services.getGenreList)
 router.get("/api/v1/genres/:genre/:page", Services.getGenrePage)
 // Get EMbed Streaming 
 router.get("/api/v1/streaming/:content", Services.getEmbedByContent)
-router.get("/api/v1/cuy/:page", Services.getKomikTerbaru)
 
 module.exports = route
